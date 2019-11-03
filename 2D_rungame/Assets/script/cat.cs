@@ -14,10 +14,19 @@ public class cat : MonoBehaviour
     public bool IsGround;
     [Header("狗名")]
     public string CatName = "cat";
-    public Transform CatTransform, cam;
+    private Transform CatTransform, cam;
+    private Animator ani;
+    private CapsuleCollider2D c2d;
+    private Rigidbody2D r2d;
     #endregion
+
     private void Start()
     {
+        ani = GetComponent<Animator>();
+        c2d = GetComponent<CapsuleCollider2D>();
+        CatTransform = GetComponent<Transform>();
+        cam = GameObject.Find("Main Camera").GetComponent<Transform>();
+        r2d = GetComponent<Rigidbody2D>();
      
     }
 
@@ -49,7 +58,13 @@ public class cat : MonoBehaviour
     /// </summary>
     public void CatJump()
     {
-        print("jump");
+        if (IsGround==true)
+        {
+             
+             print("jump");
+             ani.SetBool("jump switch",true);
+            r2d.AddForce(new Vector2(0, Jump));
+        }
     }
     /// <summary>
     /// slide
@@ -57,5 +72,35 @@ public class cat : MonoBehaviour
     public void CatSlide()
     {
         print("slide");
+        ani.SetBool("slide switch",true);
+        c2d.offset=new Vector2 (0.05f, -0.72f);
+        c2d.size=new Vector2 (0.85f, 0.85f);
+    }
+    ///
+    /// rest ani.
+    ///
+    public void ResetAnimator()
+    {
+        ani.SetBool("slide switch", false);
+        ani.SetBool("jump switch", false);
+        c2d.offset= new Vector2 (0.05f,-0.18f);
+        c2d.size= new Vector2 (0.85f,1.95f);
+        
+    }
+    private void OnCollisionEnter2D(Collision2D col)
+    {
+        if (col.gameObject.name=="地板"|| col.gameObject.name == "障礙物")
+        {
+            IsGround = true;
+            
+        }
+    }
+
+    private void OnCollisionExit2D(Collision2D col)
+    {
+        if (col.gameObject.name == "地板" || col.gameObject.name == "障礙物")
+        {
+            IsGround = false;
+        }
     }
 }
