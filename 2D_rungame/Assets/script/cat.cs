@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Tilemaps;
+using System.Collections;
 public class cat : MonoBehaviour
 {
     #region 欄位
@@ -27,10 +29,19 @@ public class cat : MonoBehaviour
     private float maxhp;
     AudioSource audioSource;
     SpriteRenderer sr;
+    [Header("拼接地圖")]
+    public Tilemap TileProp;
+    public Text DimondText;
+    public int DimondCount,CherryCount;
+    public float HpLoseRate=80;
+    public GameObject Final;
+    public Text FinalCherryScore, FinalDimondScore, FinalTimeScore, FinalTotalScore;
+    public int CherryScore, DimondScore, TimeScore;
     #endregion
 
     private void Start()
     {
+        DimondCount = 0;
         maxhp = hp;
         ani = GetComponent<Animator>();
         c2d = GetComponent<CapsuleCollider2D>();
@@ -46,6 +57,18 @@ public class cat : MonoBehaviour
     {
         MoveCat();
         MoveCamera();
+        losehp();
+        
+    }
+    /// <summary>
+    /// 隨時間扣血
+    /// </summary>
+    void losehp()
+    {
+        hp -= Time.deltaTime * HpLoseRate;
+        hpbar.fillAmount = hp / maxhp;
+        dead();
+
     }
     /// <summary>
     /// move cat
@@ -72,8 +95,8 @@ public class cat : MonoBehaviour
     {
         if (IsGround==true)
         {
-             
-             print("jump");
+            if (hp <= 0) return;
+            print("jump");
              ani.SetBool("jump switch",true);
             r2d.AddForce(new Vector2(0, Jump));
             audioSource.PlayOneShot(JumpSfx, 1.0f);
@@ -85,6 +108,7 @@ public class cat : MonoBehaviour
     /// </summary>
     public void CatSlide()
     {
+        if (hp <= 0) return;
         print("slide");
         ani.SetBool("slide switch",true);
         c2d.offset=new Vector2 (0.05f, -0.72f);
@@ -110,12 +134,28 @@ public class cat : MonoBehaviour
             
         }
 
+        if (col.gameObject.name == "道具")
+        {
+            eatcherry(col);
+            
+        }
+        
+
     }
     private void OnTriggerEnter2D(Collider2D col)
     {
         if (col.gameObject.name == "障礙物")
         {
             Damage();
+        }
+        if (col.tag == "鑽石")
+        {
+            eatdimond(col);
+        }
+        if (col.name == "DeadZone")
+        {
+            hp = 0;
+            dead();
         }
     }
     /// <summary>
@@ -128,6 +168,7 @@ public class cat : MonoBehaviour
         hpbar.fillAmount = hp / maxhp;
         sr.enabled = false;
         Invoke("SRenable",.3f);
+        dead();
     }
     void SRenable()
     {
@@ -141,4 +182,62 @@ public class cat : MonoBehaviour
             IsGround = false;
         }
     }
+    void eatcherry(Collision2D col)
+    {
+        Debug.Log("item");
+        Vector3 HitPoint = col.contacts[0].point;
+        Debug.Log(HitPoint);
+        Vector3 pos = Vector3.zero;
+        Vector3 normal = col.contacts[0].normal;
+        pos.x = HitPoint.x - 0.01f * normal.x;
+        pos.y = HitPoint.y - 0.01f * normal.y;
+        TileProp.SetTile(TileProp.WorldToCell(pos), null);
+    }
+    /// <summary>
+    /// 鑽石
+    /// </summary>
+    /// <param name="col"></param>
+    void eatdimond(Collider2D col)
+    {
+        DimondCount += 1;
+        DimondText.text = DimondCount + "";
+        Destroy(col.gameObject);
+    }
+    /// <summary>
+    /// DIE
+    /// </summary>
+    void dead()
+    {
+        if (hp <= 0)
+        {
+            ani.SetBool("death switch", true);
+            speed = 0;
+            FinalScreen();
+        }
+    }
+    /// <summary>
+    /// 結算
+    /// </summary>
+    void FinalScreen()
+    {
+        if(Final.activeInHierarchy==false)
+        {
+            Final.SetActive(true);
+            StartCoroutine(FinalScore(DimondCount,DimondScore,100,FinalDimondScore));
+            StartCoroutine(FinalScore(CherryCount, CherryScore, 100, FinalCherryScore,DimondCount*0.1f));
+        }
+    }
+    IEnumerator FinalScore(int count,int score,int addscore,Text FinalItemScore,float wait=0)
+    {
+        yield return new WaitForSeconds(wait);
+        while (count>0)
+        {
+            score += addscore;
+            FinalItemScore.text = score + "";
+            count--;
+            yield return new WaitForSeconds(0.1f);
+        }
+        
+    }
+    
 }
