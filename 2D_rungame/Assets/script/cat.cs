@@ -36,7 +36,9 @@ public class cat : MonoBehaviour
     public float HpLoseRate=80;
     public GameObject Final;
     public Text FinalCherryScore, FinalDimondScore, FinalTimeScore, FinalTotalScore;
-    public int CherryScore, DimondScore, TimeScore;
+    //cherry dimond time total
+    public int[] Score = new int[4];
+    //public int CherryScore, DimondScore, TimeScore;
     #endregion
 
     private void Start()
@@ -213,6 +215,7 @@ public class cat : MonoBehaviour
             ani.SetBool("death switch", true);
             speed = 0;
             FinalScreen();
+            
         }
     }
     /// <summary>
@@ -223,21 +226,30 @@ public class cat : MonoBehaviour
         if(Final.activeInHierarchy==false)
         {
             Final.SetActive(true);
-            StartCoroutine(FinalScore(DimondCount,DimondScore,100,FinalDimondScore));
-            StartCoroutine(FinalScore(CherryCount, CherryScore, 100, FinalCherryScore,DimondCount*0.1f));
+            StartCoroutine(FinalScore(DimondCount,0,100,FinalDimondScore));
+            StartCoroutine(FinalScore(CherryCount, 1, 100, FinalCherryScore,DimondCount*0.1f));
+            int time = (int)Time.timeSinceLevelLoad;
+            StartCoroutine(FinalScore(time, 2, 100, FinalTimeScore, (DimondCount+CherryCount) * 0.1f));
         }
     }
-    IEnumerator FinalScore(int count,int score,int addscore,Text FinalItemScore,float wait=0)
+    IEnumerator FinalScore(int count,int ScoreIndex,int addscore,Text FinalItemScore,float wait=0)
     {
         yield return new WaitForSeconds(wait);
         while (count>0)
         {
-            score += addscore;
-            FinalItemScore.text = score + "";
+            Score[ScoreIndex] += addscore;
+            FinalItemScore.text = Score[ScoreIndex] + "";
             count--;
             yield return new WaitForSeconds(0.1f);
+            
         }
-        
+        if (ScoreIndex != 3) { Score[3] = Score[0] + Score[1] + Score[2]; }
+        if (ScoreIndex == 2)
+        {
+            int total = Score[3] / 100;
+            Score[3] = 0;
+            StartCoroutine(FinalScore(total,3,100,FinalTotalScore,0.05f));
+        }
     }
     
 }
